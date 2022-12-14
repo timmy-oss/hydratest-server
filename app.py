@@ -1,9 +1,10 @@
 
-from fastapi import FastAPI, Request,Response
+import methods
+from fastapi import FastAPI, Request,Response,UploadFile, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from models.settings import Settings
 from jsonrpcserver import async_dispatch
-import methods
+from lib.ipfs import upload_to_ipfs
 
 
 app_settings = Settings()
@@ -31,6 +32,31 @@ app.add_middleware(
 @app.post("/api/v1/rpc")
 async def rpc( request : Request ):
     return Response( await async_dispatch(await request.body()))
+
+
+
+@app.post("api/v1/upload")
+async def upload( upload_file : UploadFile = Form()):
+    
+    # MAX_FILE_SIZE = 1024 * 1024 * 3
+
+    SUPPORTED_FORMATS = [
+        "image/jpg",
+        "image/jpeg",
+        "image/webp",
+        "image/png",
+    ]
+
+
+    if SUPPORTED_FORMATS.count(upload_file.content_type) == 0:
+        raise HTTPException(
+            status_code=400, detail="invalid content type for file")
+
+    res = upload_to_ipfs( upload_file.file)
+
+    return res
+
+   
 
 
 
