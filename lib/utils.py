@@ -1,6 +1,7 @@
 from pydantic import ValidationError
 from nanoid import generate
 from jose import jwt
+from jose.exceptions import ExpiredSignatureError
 from models.users import AuthTokenModel
 from jsonrpcserver import JsonRpcError
 from models.settings import Settings
@@ -37,11 +38,17 @@ def jwt_encode( payload, secret ):
 
 def jwt_decode( token, secret):
     try:
-        return None, jwt.decode( token, secret, algorithms= ['HS256'] )
+        payload= jwt.decode( token, secret, algorithms= ['HS256'] ) 
+
+        return None, payload
+
+
+    except ExpiredSignatureError:
+        return { "msg" : "Session expired" }, None
 
 
     except Exception as e:
-        return {"msg" : e }, None
+        return {"msg" : str(e) }, None
 
 
 
@@ -84,7 +91,7 @@ def authenticate_user( tokenObj ):
     error, payload  = jwt_decode(data['token'], settings.jwt_secret)
 
     if error:
-        raise JsonRpcError(-32602, "invalid token", error)
+        raise JsonRpcError(-32602, error["msg"], error)
 
     id = payload['sub']
 

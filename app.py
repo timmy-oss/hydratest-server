@@ -35,7 +35,7 @@ async def rpc( request : Request ):
 
 
 
-@app.post("api/v1/upload")
+@app.post("/api/v1/upload")
 async def upload( upload_file : UploadFile = Form()):
     
     # MAX_FILE_SIZE = 1024 * 1024 * 3

@@ -4,6 +4,7 @@ from lib.utils import model_validate, generate_user_id, hash_password, verify_pa
 from lib.db import redis_db
 from models.settings import Settings
 from time import time
+from lib.utils import authenticate_user, validate_req
 
 
 settings = Settings()
@@ -123,6 +124,25 @@ async def login_user( req : LoginDataModel ):
             }
         })
 
+
+
+
+
+@method( name = "users.authenticated")
+async def get_authenticated_user(  req  ):
+
+    req = validate_req(req)
+
+    user, payload = authenticate_user(req.auth)
+    
+    return Success({
+        "ok" : True,
+        "data" : {
+            "user" :  user,
+        }
+    })
+
+    
 
 
 

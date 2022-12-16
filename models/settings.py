@@ -22,7 +22,11 @@ class Settings(BaseSettings):
     db_username : str = "default"
     db_password  : str = "root"
     jwt_secret : str = "jwt_secret"
-    jwt_exp_in_mins : int = 30
+    jwt_exp_in_mins : int = 2
+    ipfs_node_url: str = 'https://ipfs.infura.io:5001'
+    infura_project_id  :str = "2CASClsLixgaD7e6qlO5LfIYA4b"
+    infura_project_secret : str = "3a6dfcb5e77b97ba69b90f55e1f7b326"
+    ipfs_read_node : str = "https://fabaaw.infura-ipfs.io/ipfs"
 
 
 
