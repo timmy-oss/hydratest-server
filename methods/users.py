@@ -107,20 +107,23 @@ async def login_user( req : LoginDataModel ):
         raise JsonRpcError("401", "Invalid login details")
 
     else:
-        jwt = jwt_encode({
+
+        payload = {
 
             'sub' : user['id'],
             'exp' : time() + ( settings.jwt_exp_in_mins * 60 ),
             'refreshable' : True,
             'perms' : []
+        }
 
-
-        }, settings.jwt_secret)
+        jwt = jwt_encode(payload , settings.jwt_secret)
+        
         return Success({
             "ok" : True,
             "data" : {
                 "token" : jwt,
-                "user" : user
+                "user" : user,
+                "flags" : payload
             }
         })
 

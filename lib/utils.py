@@ -91,7 +91,7 @@ def authenticate_user( tokenObj ):
     error, payload  = jwt_decode(data['token'], settings.jwt_secret)
 
     if error:
-        raise JsonRpcError(-32602, error["msg"], error)
+        raise JsonRpcError(401, error["msg"], error)
 
     id = payload['sub']
 
@@ -99,7 +99,7 @@ def authenticate_user( tokenObj ):
     users_matching = redis_db.json().get("users", f"$[?@.id == '{id}'] ")
 
     if len(users_matching) == 0:
-        raise JsonRpcError(-32602, "invalid token")
+        raise JsonRpcError(401, "invalid credentials")
 
     user = users_matching[0]
 
