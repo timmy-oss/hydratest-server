@@ -1,10 +1,10 @@
 
-import methods
 from fastapi import FastAPI, Request,Response,UploadFile, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from models.settings import Settings
 from jsonrpcserver import async_dispatch
 from lib.ipfs import upload_to_ipfs
+from models.settings import Settings
+import methods 
 
 
 app_settings = Settings()
@@ -22,6 +22,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
     max_age=3600,
+    
 )
 
 
