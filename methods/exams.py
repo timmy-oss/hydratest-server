@@ -65,6 +65,29 @@ async def list_all_exam(  req  ):
         "data" : matching[0]
     })
 
+
+
+
+@method( name = "exams.get_one")
+async def get_one_exam(  req  ):
+
+    req = validate_req(req)
+
+    user, payload = authenticate_user(req.auth)
+    
+    id = req.body['id']
+
+    matching = redis_db.json().get("exams", f"$[?@.id == '{id}' ]")
+
+    if len(matching) == 0:
+        raise JsonRpcError(403, "exam with id does not exists")
+
+
+    return Success({
+        "ok" : True,
+        "data" : matching[0]
+    })
+
     
 
 
