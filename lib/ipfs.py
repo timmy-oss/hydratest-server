@@ -1,9 +1,9 @@
 import requests
 from fastapi import HTTPException
-from models.settings import   Settings
+
+from models.settings import Settings
 
 settings = Settings()
-
 
 def upload_to_ipfs(file):
     try:
