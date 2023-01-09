@@ -1,4 +1,4 @@
-from jsonrpcserver import method, JsonRpcError, Error, InvalidParams, Success
+﻿from jsonrpcserver import method, JsonRpcError, Error, InvalidParams, Success
 from models.courses import CreateCourseInputModel, CourseQuestion
 from lib.utils import model_validate, authenticate_user, validate_req
 from lib.db import redis_db
@@ -103,6 +103,29 @@ async def add_course_question(req):
         "ok" : True,
         "data" : course_question
     })
+
+
+
+# Get All questions under a course
+
+
+@method( name = "courses.get_questions")
+async def get_course_questions(  req  ):
+
+    req = validate_req(req)
+
+    user, payload = authenticate_user(req.auth)
+    
+    id = req.body['courseId']
+
+    matching = redis_db.json().get("course_questions", f"$[?@.course == '{id}' ]")
+
+
+    return Success({
+        "ok" : True,
+        "data" : matching
+    })
+
 
 
  
