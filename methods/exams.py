@@ -1,8 +1,8 @@
-from jsonrpcserver import method, JsonRpcError, InvalidParams, Success
+﻿from jsonrpcserver import method, JsonRpcError, InvalidParams, Success
 
 from lib.db import redis_db
 from lib.utils import model_validate, authenticate_user, validate_req
-from models.exams import CreateExamInputModel
+from models.exams import CreateExamInputModel,CreateExamSessionInput,ResumeExamSessionInput
 from models.settings import Settings
 
 settings = Settings()
@@ -62,7 +62,7 @@ async def get_one_exam(req):
     req = validate_req(req)
 
     user, payload = authenticate_user(req.auth)
-
+    
     id = req.body['id']
 
     matching = redis_db.json().get("exams", f"$[?@.id == '{id}' ]")
@@ -74,3 +74,5 @@ async def get_one_exam(req):
         "ok": True,
         "data": matching[0]
     })
+
+

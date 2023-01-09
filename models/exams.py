@@ -19,16 +19,37 @@ class CreateExamInputModel(BaseModel):
         allow_population_by_field_name = True
 
 
+# Initialize Exam Session Model
+class CreateExamSessionInput( BaseModel ):
+	public_key : str =Field( alias= "publicKey")
+	exam : str = Field( min_length = 16 )
+	
+	class Config:
+		allow_population_by_field_name = True
+		
+		
+		
+# Resume a  Exam Session Model
+class ResumeExamSessionInput( BaseModel ):
+	public_key : str =Field( alias= "publicKey")
+	
+	
+	class Config:
+		allow_population_by_field_name = True
+
+
 
 # Exam Session Response 
 class ExamSessionResponse(BaseModel):
 	id : str = Field( default_factory= gen_uid)
 	session : str = Field( min_length = 16)
 	question : str = Field( min_length = 16 )
-	created : float = Field( min =0, default_factory = time )
+	created : float = Field( min =0, default_factorKeyy = time )
+	response : str = Field( min_length = 1)
 	response_content : str = Field( min_length = 1 , alias = "responseContent")
-	is_correct : bool = Field( default = False , alias = "isCorreeditsct" )
+	is_correct : bool = Field( default = False , alias = "isCorrect" )
 	edits : int = Field( default  = 0 )
+	integrity_hash : list[None,str]= Field( default = None , min_length = 32 , alias = "integrityHash" )
 	
 	class Config:
 		allow_population_by_field_name = True
@@ -37,12 +58,15 @@ class ExamSessionResponse(BaseModel):
 
 # Exam Session Model 
 
-class ExamSession(BaseModel):q
+class ExamSession(BaseModel):
+	peer_public_key : str =Field( alias= "peerPublicKey")
+	public_key : str =Field( alias= "publicKey")
+	private_key : str = Field( alias= "privateKey")
 	id : str = Field( default_factory= gen_uid)
 	exam : str = Field( min_length = 16 )
 	user : str = Field(min_length = 16 )
 	created : float = Field( min =0, default_factory = time )
-	question_ids = list[str] = Field( min_items = 5, alias = "questionIds" )
+	question_ids = list[str] = Fieldublic( min_items = 5, alias = "questionIds" )
 	ping_interval : int = Field( default = 5 , alias = "pingInterval" )
 	last_ping : Union[None,float] = Field( default  = None, min = 0, alias = "lastPing" )
 	is_active : bool = Field( default = True, alias = "isActive" )
