@@ -44,7 +44,7 @@ class ExamSessionResponse(BaseModel):
 	id : str = Field( default_factory= gen_uid)
 	session : str = Field( min_length = 16)
 	question : str = Field( min_length = 16 )
-	created : float = Field( min =0, default_factorKeyy = time )
+	created : float = Field( min =0, default_factory = time )
 	response : str = Field( min_length = 1)
 	response_content : str = Field( min_length = 1 , alias = "responseContent")
 	is_correct : bool = Field( default = False , alias = "isCorrect" )
@@ -75,5 +75,22 @@ class ExamSession(BaseModel):
 	
 	class Config:
 		allow_population_by_field_name = True
+		
+		
+		
+@method(name="exams.create_session")
+async def create_exam_session(req):
+
+    req = validate_req(req)
+
+    user, payload = authenticate_user(req.auth)
+
+    err, model = model_validate(CreateExamSessionInput, req.body)
+
+    if err:
+      return InvalidParams(err)
+
+
+
 	
 	
