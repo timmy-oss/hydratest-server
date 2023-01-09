@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request, Response, UploadFile, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from jsonrpcserver import async_dispatch
+from methods import *
 
 from lib.ipfs import upload_to_ipfs
 from models.settings import Settings

@@ -5,7 +5,6 @@ from pydantic import BaseModel, Field, HttpUrl, validator
 
 from lib.utils import gen_uid
 
-
 class CreateCourseInputModel(BaseModel):
     id: str = Field(default_factory=gen_uid)
     course_title: str = Field(min_length=8, alias="courseTitle", )

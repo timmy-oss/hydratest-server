@@ -80,14 +80,13 @@ class ExamSession(BaseModel):
 		
 @method(name="exams.create_session")
 async def create_exam_session(req):
+	req = validate_req(req)
 
-    req = validate_req(req)
-
-    user, payload = authenticate_user(req.auth)
-
-    err, model = model_validate(CreateExamSessionInput, req.body)
-
-    if err:
+	user, payload = authenticate_user(req.auth)
+	
+	err, model = model_validate(CreateExamSessionInput, req.body)
+	
+	if err:
       return InvalidParams(err)
 
 
