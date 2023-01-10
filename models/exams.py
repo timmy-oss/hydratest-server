@@ -49,7 +49,7 @@ class ExamSessionResponse(BaseModel):
 	response_content : str = Field( min_length = 1 , alias = "responseContent")
 	is_correct : bool = Field( default = False , alias = "isCorrect" )
 	edits : int = Field( default  = 0 )
-	integrity_hash : list[None,str]= Field( default = None , min_length = 32 , alias = "integrityHash" )
+	integrity_hash : Union[None,str]= Field( default = None , min_length = 32 , alias = "integrityHash" )
 	
 	class Config:
 		allow_population_by_field_name = True
@@ -66,7 +66,7 @@ class ExamSession(BaseModel):
 	exam : str = Field( min_length = 16 )
 	user : str = Field(min_length = 16 )
 	created : float = Field( min =0, default_factory = time )
-	question_ids = list[str] = Fieldublic( min_items = 5, alias = "questionIds" )
+	question_ids : list[str] = Field( min_items = 5, alias = "questionIds" )
 	ping_interval : int = Field( default = 5 , alias = "pingInterval" )
 	last_ping : Union[None,float] = Field( default  = None, min = 0, alias = "lastPing" )
 	is_active : bool = Field( default = True, alias = "isActive" )
@@ -76,18 +76,7 @@ class ExamSession(BaseModel):
 	class Config:
 		allow_population_by_field_name = True
 		
-		
-		
-@method(name="exams.create_session")
-async def create_exam_session(req):
-	req = validate_req(req)
 
-	user, payload = authenticate_user(req.auth)
-	
-	err, model = model_validate(CreateExamSessionInput, req.body)
-	
-	if err:
-      return InvalidParams(err)
 
 
 

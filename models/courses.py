@@ -1,6 +1,6 @@
 from enum import Enum
 from typing import Union
-
+from time import time
 from pydantic import BaseModel, Field, HttpUrl, validator
 
 from lib.utils import gen_uid
@@ -32,6 +32,7 @@ class Options(str, Enum):
 
 
 class CourseQuestion(BaseModel):
+    id: str = Field(default_factory=gen_uid)
     question_type: QuestionType = Field(alias="questionType")
     question_content: str = Field(min_length=8, max_length=512, alias="questionContent")
     answer: Union[str, None] = Field(min_length=1, max_length=512, default=None)
@@ -43,6 +44,14 @@ class CourseQuestion(BaseModel):
     lock_question: bool = Field(alias="lockQuestion")
     course: str
     illustration: Union[HttpUrl, None] = Field(default=None)
+    upvotes : list[str]  = Field( default= [])
+    downvotes : list[str] = Field( default= [])
+    flags : list[str] = Field( default= [])
+    created : float = Field( min =0, default_factory = time )
+    last_updated : float = Field( min =0, default_factory = time , alias="lastUpdated")
+
+
+
 
     @validator("answer")
     def validate_answer(cls, v, values):
