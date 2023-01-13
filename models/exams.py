@@ -21,7 +21,7 @@ class CreateExamInputModel(BaseModel):
 
 # Initialize Exam Session Model
 class CreateExamSessionInput( BaseModel ):
-	public_key : str =Field( alias= "publicKey")
+	key : str =Field( alias= "key")
 	exam : str = Field( min_length = 16 )
 	
 	class Config:
@@ -64,7 +64,7 @@ class ExamSession(BaseModel):
 	private_key : str = Field( alias= "privateKey")
 	id : str = Field( default_factory= gen_uid)
 	exam : str = Field( min_length = 16 )
-	user : str = Field(min_length = 16 )
+	user : str = Field(min_length = 6 )
 	created : float = Field( min =0, default_factory = time )
 	question_ids : list[str] = Field( min_items = 5, alias = "questionIds" )
 	ping_interval : int = Field( default = 5 , alias = "pingInterval" )

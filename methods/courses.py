@@ -127,6 +127,7 @@ async def edit_course_question(req):
 
     course_question_model = CourseQuestion(**course_question_dict)
     new_course_question = course_question_model.dict()
+    new_course_question.update({"last_updated" : time()})
 
     redis_db.json().set("course_questions", f"$[?@.id == '{id}']", new_course_question)
 
