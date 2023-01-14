@@ -86,7 +86,18 @@ async def session_heartbeat(req):
 
     user, payload = authenticate_user(req.auth)
 
-    session = redis_db.json().set(f"examsession:{user['id']}", "$.last_ping", time() )
+    sessions = redis_db.json().get(f"examsession:{user['id']}", "$" )
+
+    if len(sessions) == 0:
+        raise InvalidParams("user has no active session")
+
+    # print(sessions)
+    session = sessions[0]
+    print(session['id'], req.body['id'])
+    if not session['id'] == req.body['id']:
+        raise JsonRpcError(403, "Session ID conflict detected", { "message" : "Session ID conflict detected"}) 
+
+    redis_db.json().set(f"examsession:{user['id']}", "$.last_ping", time() )
 
     session_model = ExamSession(**session)
 
@@ -129,7 +140,7 @@ async def create_exam_session(req):
     number_of_questions_in_course = len(all_qids)
 
     if number_of_questions_in_course == 0:
-        raise JsonRpcError(403, "No questions for seleceted course")
+        raise JsonRpcError(403, "No questions for seleceted course", {"message" : "No questions for course"})
 
 
     qids = []
@@ -160,6 +171,53 @@ async def create_exam_session(req):
     return Success({
         "ok": True,
         "data": session.dict(exclude={'private_key', 'public_key'})
+    })
+
+
+
+
+@method(name="exams.session.get_question")
+async def get_exam_session_question(req):
+    
+    req = validate_req(req)
+
+    user, payload = authenticate_user(req.auth)
+
+
+    sessions = redis_db.json().get(f"examsession:{user['id']}", "$" )
+
+    if len(sessions) == 0:
+        raise InvalidParams("user has no active session")
+
+    # print(sessions)
+    session = sessions[0]
+    print(session['id'], req.body['id'])
+
+    if not session['id'] == req.body['sessionId']:
+        raise JsonRpcError(403, "Session ID conflict detected", { "message" : "Session ID conflict detected"}) 
+
+
+    qid = req.body['id']
+    # print(qid, session['question_ids'])
+    if not qid in session['question_ids']:
+        raise JsonRpcError(403, "Question not tied to session", { "message" : "Question not tied to session"}) 
+
+    matching = redis_db.json().get("course_questions", f"$[?@.id == '{qid}' ]")
+
+    if len(matching) == 0:
+        raise JsonRpcError(403, "Question with id does not exists")
+
+    q = matching[0]
+
+    session_model = ExamSession(**session)
+
+    return Success({
+        "ok": True,
+        "data": {
+        "session" :  session_model.dict(exclude={'private_key', 'public_key'}),
+        "question" : q
+        
+        }
     })
 
 
