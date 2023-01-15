@@ -126,6 +126,24 @@ async def create_exam_session(req):
         raise JsonRpcError(403, "exam with id does not exist")
 
     exam = matching[0]
+
+
+    sessions = redis_db.json().get(f"examsession:{user['id']}", "$" )
+
+    if len(sessions) < 0:
+        session = sessions[0]
+
+        session_model = ExamSession(**session)
+
+        if session_model.is_active:
+        
+            return Success({
+        "ok": True,
+        "data": session_model.dict(exclude={'private_key', 'public_key'})
+    })
+
+
+    
         
     public_key = rsa.PublicKey.load_pkcs1(model.key)
 
@@ -139,17 +157,21 @@ async def create_exam_session(req):
 
     number_of_questions_in_course = len(all_qids)
 
-    if number_of_questions_in_course == 0:
-        raise JsonRpcError(403, "No questions for seleceted course", {"message" : "No questions for course"})
+    print("Questions: ", number_of_questions_in_course)
+
+    if number_of_questions_in_course < exam['number_of_questions']:
+        raise JsonRpcError(403, "Not enough questions for seleceted course", {"message" : "Not enough questions for course"})
 
 
     qids = []
 
 
     start = 0
-    while start < exam['number_of_questions']:
+    while start < min( exam['number_of_questions'], number_of_questions_in_course):
+        x = random.randint(0, min( exam['number_of_questions'], number_of_questions_in_course) -1)
+        if all_qids[x] in qids:
+            continue
         start += 1
-        x = random.randint(0, number_of_questions_in_course -1)
         qids.append(all_qids[x])
 
 
