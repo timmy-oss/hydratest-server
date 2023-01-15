@@ -1,11 +1,10 @@
 ﻿from jsonrpcserver import method, JsonRpcError, InvalidParams, Success
 from lib.db import redis_db
 from lib.utils import model_validate, authenticate_user, validate_req
-from models.exams import CreateExamInputModel, CreateExamSessionInput, ResumeExamSessionInput, ExamSession
+from models.exams import CreateExamInputModel, CreateExamSessionInput, ResumeExamSessionInput, ExamSession, ExamSessionResponse
 from models.settings import Settings
 from time import time
-import rsa
-import random
+import rsa,random,json
 
 settings = Settings()
 
@@ -93,7 +92,7 @@ async def session_heartbeat(req):
 
     # print(sessions)
     session = sessions[0]
-    print(session['id'], req.body['id'])
+    # print(session['id'], req.body['id'])
     if not session['id'] == req.body['id']:
         raise JsonRpcError(403, "Session ID conflict detected", { "message" : "Session ID conflict detected"}) 
 
@@ -103,7 +102,7 @@ async def session_heartbeat(req):
 
     return Success({
         "ok": True,
-        "data": session_model.dict(exclude={'private_key', 'public_key'})
+        "data": session_model.dict(exclude={'private_key', 'peer_public_key'})
     })
 
 
@@ -130,7 +129,7 @@ async def create_exam_session(req):
 
     sessions = redis_db.json().get(f"examsession:{user['id']}", "$" )
 
-    if len(sessions) < 0:
+    if len(sessions) > 0:
         session = sessions[0]
 
         session_model = ExamSession(**session)
@@ -139,17 +138,21 @@ async def create_exam_session(req):
         
             return Success({
         "ok": True,
-        "data": session_model.dict(exclude={'private_key', 'public_key'})
+        "data": session_model.dict(exclude={'private_key', 'peer_public_key'})
     })
 
 
-    
+    priv_key = pub_key = peer_public_key  = None
+
+
+    try:
         
-    public_key = rsa.PublicKey.load_pkcs1(model.key)
+        peer_public_key = rsa.PublicKey.load_pkcs1(model.key.encode())
 
-    pub_key, priv_key = rsa.newkeys(512)
+        pub_key, priv_key = rsa.newkeys(512)
 
-    peer_key  = pub_key.save_pkcs1()
+    except Exception as e:
+        raise JsonRpcError(403, str(e), {"message" : str(e)})
 
 
   
@@ -160,7 +163,7 @@ async def create_exam_session(req):
     print("Questions: ", number_of_questions_in_course)
 
     if number_of_questions_in_course < exam['number_of_questions']:
-        raise JsonRpcError(403, "Not enough questions for seleceted course", {"message" : "Not enough questions for course"})
+        raise JsonRpcError(403, "Not enough questions for selected course", {"message" : "Not enough questions for selected course"})
 
 
     qids = []
@@ -176,9 +179,9 @@ async def create_exam_session(req):
 
 
     session = ExamSession(
-        peer_public_key = public_key.save_pkcs1(),
-        private_key = priv_key.save_pkcs1(),
-        public_key = peer_key,
+        peer_public_key = peer_public_key.save_pkcs1().decode(),
+        private_key = priv_key.save_pkcs1().decode(),
+        public_key = pub_key.save_pkcs1().decode(),
         exam = model.exam,
         user = user['id'],
         ping_interval = settings.ping_interval,
@@ -192,7 +195,7 @@ async def create_exam_session(req):
 
     return Success({
         "ok": True,
-        "data": session.dict(exclude={'private_key', 'public_key'})
+        "data": session.dict(exclude={'private_key', 'peer_public_key'})
     })
 
 
@@ -213,7 +216,7 @@ async def get_exam_session_question(req):
 
     # print(sessions)
     session = sessions[0]
-    print(session['id'], req.body['id'])
+    # print(session['id'], req.body['id'])
 
     if not session['id'] == req.body['sessionId']:
         raise JsonRpcError(403, "Session ID conflict detected", { "message" : "Session ID conflict detected"}) 
@@ -236,9 +239,92 @@ async def get_exam_session_question(req):
     return Success({
         "ok": True,
         "data": {
-        "session" :  session_model.dict(exclude={'private_key', 'public_key'}),
+        "session" :  session_model.dict(exclude={'private_key', 'peer_public_key'}),
         "question" : q
         
+        }
+    })
+
+
+
+    
+
+
+@method(name="exams.session.submit_response")
+async def submit_question_response(req):
+    
+    req = validate_req(req)
+
+    user, payload = authenticate_user(req.auth)
+
+
+    sessions = redis_db.json().get(f"examsession:{user['id']}", "$" )
+
+    if len(sessions) == 0:
+        raise InvalidParams("user has no active session")
+
+    # print(sessions)
+    session = sessions[0]
+    # print(session['id'], req.body['id'])
+
+    if not session['id'] == req.body['sessionId']:
+        raise JsonRpcError(403, "Session ID conflict detected", { "message" : "Session ID conflict detected"}) 
+    
+    # private_key = peer_public_key = response = None
+
+    # try:
+ 
+    #     private_key = rsa.PrivateKey.load_pkcs1(session['private_key'].encode(), "PEM")
+    #     peer_public_key  = rsa.PublicKey.load_pkcs1(session['peer_public_key'].encode(), "PEM")
+
+    #     response = rsa.decrypt( bytes.fromhex(req.body['response']) , private_key)
+
+    # except Exception as e:
+    #     print(e)
+    #     raise JsonRpcError(403, str(e), {"message" : str(e)})
+
+    
+    decoded_response = req.body['response']
+    qid = decoded_response['qid']
+
+    # # print(qid, session['question_ids'])
+    if not qid in session['question_ids']:
+        raise JsonRpcError(403, "Question not tied to session", { "message" : "Question not tied to session"}) 
+
+    matching = redis_db.json().get("course_questions", f"$[?@.id == '{qid}' ]")
+
+    if len(matching) == 0:
+        raise JsonRpcError(403, "Question with id does not exists")
+
+    q = matching[0]
+
+    test_match = lambda x,y : not x.strip().upper().find(y.strip().upper()) == -1
+
+    is_correct_answer = False
+
+    if q['question_type'] == 'objective' and decoded_response['answer'].strip().upper() == q['correct_option'].strip().upper():
+        is_correct_answer = True
+
+
+    if q['question_type'] == 'germane' and test_match(q['answer'], decoded_response['answer']):
+        is_correct_answer = True
+
+
+   
+    exam_session_response_model = ExamSessionResponse(
+        session = session['id'],
+        question = qid,
+        response = decoded_response['answer'],
+        response_content = decoded_response['answer'] if q['question_type'] == "germane" else q[f"option_{decoded_response['answer'].strip().upper()}"],
+        is_correct = is_correct_answer
+    )
+
+    exam_session_response = exam_session_response_model.dict()
+
+    return Success({
+        "ok": True,
+        "data": {
+        "exam_session_response" : exam_session_response 
         }
     })
 
