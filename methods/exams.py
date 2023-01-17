@@ -129,7 +129,7 @@ async def create_exam_session(req):
 
     sessions = redis_db.json().get(f"examsession:{user['id']}", "$" )
 
-    if len(sessions) > 0:
+    if sessions and len(sessions) > 0:
         session = sessions[0]
 
         session_model = ExamSession(**session)
