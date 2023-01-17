@@ -310,7 +310,12 @@ async def submit_question_response(req):
         is_correct_answer = True
 
 
-   
+    session_model = ExamSession(**session);
+
+    if not qid in session_model.attempted_question_ids:
+        redis_db.json().arrappend(f"examsession:{user['id']}", "$.attempted_question_ids" , qid )
+        session_model.attempted_question_ids.append( qid );
+
     exam_session_response_model = ExamSessionResponse(
         session = session['id'],
         question = qid,
@@ -324,7 +329,8 @@ async def submit_question_response(req):
     return Success({
         "ok": True,
         "data": {
-        "exam_session_response" : exam_session_response 
+        "exam_session_response" : exam_session_response ,
+        "session" : session_model.dict(exclude = { "private_key", "peer_public_key"})
         }
     })
 

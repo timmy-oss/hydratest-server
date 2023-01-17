@@ -67,6 +67,7 @@ class ExamSession(BaseModel):
 	user : str = Field(min_length = 6 )
 	created : float = Field( min =0, default_factory = time )
 	question_ids : list[str] = Field( min_items = 5, alias = "questionIds" )
+	attempted_question_ids : list[str] =  Field( default = [], alias = "attemptedQuestionIds")
 	ping_interval : int = Field( default = 5 , alias = "pingInterval" )
 	last_ping : Union[None,float] = Field( default  = None, min = 0, alias = "lastPing" )
 	is_active : bool = Field( default = True, alias = "isActive" )
