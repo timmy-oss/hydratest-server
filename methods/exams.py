@@ -85,9 +85,10 @@ async def session_heartbeat(req):
 
     user, payload = authenticate_user(req.auth)
 
-    sessions = redis_db.json().get(f"examsession:{user['id']}", "$" )
+    exam_id = req.body['exam']
+    sessions = redis_db.json().get(f"examsession:{user['id']}:{exam_id}", "$" )
 
-    if len(sessions) == 0:
+    if sessions and len(sessions) == 0:
         raise InvalidParams("user has no active session")
 
     # print(sessions)
@@ -96,7 +97,7 @@ async def session_heartbeat(req):
     if not session['id'] == req.body['id']:
         raise JsonRpcError(403, "Session ID conflict detected", { "message" : "Session ID conflict detected"}) 
 
-    redis_db.json().set(f"examsession:{user['id']}", "$.last_ping", time() )
+    redis_db.json().set(f"examsession:{user['id']}:{exam_id}", "$.last_ping", time() )
 
     session_model = ExamSession(**session)
 
@@ -127,9 +128,9 @@ async def create_exam_session(req):
     exam = matching[0]
 
 
-    sessions = redis_db.json().get(f"examsession:{user['id']}", "$" )
+    sessions = redis_db.json().get(f"examsession:{user['id']}:{exam['id']}", "$" )
 
-    if len(sessions) > 0:
+    if sessions and len(sessions) > 0:
         session = sessions[0]
 
         session_model = ExamSession(**session)
@@ -160,7 +161,7 @@ async def create_exam_session(req):
 
     number_of_questions_in_course = len(all_qids)
 
-    print("Questions: ", number_of_questions_in_course)
+    # print("Questions: ", number_of_questions_in_course)
 
     if number_of_questions_in_course < exam['number_of_questions']:
         raise JsonRpcError(403, "Not enough questions for selected course", {"message" : "Not enough questions for selected course"})
@@ -190,7 +191,7 @@ async def create_exam_session(req):
 
     session_dict = session.dict()
 
-    redis_db.json().set(f"examsession:{user['id']}", "$", session_dict )
+    redis_db.json().set(f"examsession:{user['id']}:{model.exam}", "$", session_dict )
 
 
     return Success({
@@ -208,10 +209,11 @@ async def get_exam_session_question(req):
 
     user, payload = authenticate_user(req.auth)
 
+    exam_id = req.body['exam']
 
-    sessions = redis_db.json().get(f"examsession:{user['id']}", "$" )
+    sessions = redis_db.json().get(f"examsession:{user['id']}:{exam_id}", "$" )
 
-    if len(sessions) == 0:
+    if sessions and len(sessions) == 0:
         raise InvalidParams("user has no active session")
 
     # print(sessions)
@@ -233,14 +235,39 @@ async def get_exam_session_question(req):
         raise JsonRpcError(403, "Question with id does not exists")
 
     q = matching[0]
+    q.update({
+        "correct_option" : None,
+        "answer" : None
+    })
 
     session_model = ExamSession(**session)
+
+    q_response = None
+
+
+    if q['id'] in session_model.attempted_question_ids:
+
+        q_id  =q['id']
+        s_id = session['id']
+
+
+        question_responses = redis_db.json().get("examresponses", f"$[?@.question == '{q_id}' && @.session == '{s_id}' ]"  )
+        
+        if len(question_responses) > 0:
+            q_response = ExamSessionResponse(**question_responses[0])
+
+
+    q_response_data = None
+
+    if q_response:
+        q_response_data = q_response.dict(exclude = {'is_correct',})  
 
     return Success({
         "ok": True,
         "data": {
         "session" :  session_model.dict(exclude={'private_key', 'peer_public_key'}),
-        "question" : q
+        "question" : q,
+        "response" :  q_response_data
         
         }
     })
@@ -257,10 +284,10 @@ async def submit_question_response(req):
 
     user, payload = authenticate_user(req.auth)
 
+    exam_id = req.body['exam']
+    sessions = redis_db.json().get(f"examsession:{user['id']}:{exam_id}", "$" )
 
-    sessions = redis_db.json().get(f"examsession:{user['id']}", "$" )
-
-    if len(sessions) == 0:
+    if sessions and len(sessions) == 0:
         raise InvalidParams("user has no active session")
 
     # print(sessions)
@@ -313,26 +340,60 @@ async def submit_question_response(req):
     session_model = ExamSession(**session);
 
     if not qid in session_model.attempted_question_ids:
-        redis_db.json().arrappend(f"examsession:{user['id']}", "$.attempted_question_ids" , qid )
+        redis_db.json().arrappend(f"examsession:{user['id']}:{exam_id}", "$.attempted_question_ids" , qid )
         session_model.attempted_question_ids.append( qid );
 
-    exam_session_response_model = ExamSessionResponse(
-        session = session['id'],
-        question = qid,
-        response = decoded_response['answer'],
-        response_content = decoded_response['answer'] if q['question_type'] == "germane" else q[f"option_{decoded_response['answer'].strip().upper()}"],
-        is_correct = is_correct_answer
-    )
+    q_id = q['id']
+    s_id = session['id']  
 
-    exam_session_response = exam_session_response_model.dict()
+    question_responses = redis_db.json().get("examresponses", f"$[?@.question == '{q_id}' && @.session == '{s_id}' ]"  )
+    
+    if len(question_responses) > 0:
+        q_response = ExamSessionResponse(**question_responses[0])
+        q_response.response = decoded_response['answer']
+        q_response.response_content = decoded_response['answer'] if q['question_type'] == "germane" else q[f"option_{decoded_response['answer'].strip().upper()}"]
+        q_response.is_correct = is_correct_answer
+        q_response.edits += 1
 
-    return Success({
+        redis_db.json().set("examresponses", f"$[?@.question == '{q_id}' && @.session == '{s_id}' ]" , q_response.dict() )
+
+
+        return Success({
         "ok": True,
         "data": {
-        "exam_session_response" : exam_session_response ,
+        "exam_session_response" : q_response.dict() ,
         "session" : session_model.dict(exclude = { "private_key", "peer_public_key"})
         }
     })
+
+
+
+    else:
+
+        exam_session_response_model = ExamSessionResponse(
+            session = session['id'],
+            question = qid,
+            response = decoded_response['answer'],
+            response_content = decoded_response['answer'] if q['question_type'] == "germane" else q[f"option_{decoded_response['answer'].strip().upper()}"],
+            is_correct = is_correct_answer
+        )
+
+        exam_session_response = exam_session_response_model.dict()
+
+        redis_db.json().arrappend("examresponses","$", exam_session_response  )
+
+        return Success({
+            "ok": True,
+            "data": {
+            "exam_session_response" : exam_session_response ,
+            "session" : session_model.dict(exclude = { "private_key", "peer_public_key"})
+            }
+        })
+
+
+
+
+
 
 
 

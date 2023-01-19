@@ -6,5 +6,7 @@ redis_db.json().set("users", "$",  [],  nx =True)
 redis_db.json().set("courses", "$",  [],  nx =True)
 redis_db.json().set("course_questions", "$",  [],  nx =True)
 redis_db.json().set("exams", "$",  [],  nx =True)
+redis_db.json().set("examresponses", "$",  [],  nx =True)
+
 
 
