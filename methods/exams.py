@@ -97,9 +97,15 @@ async def session_heartbeat(req):
     if not session['id'] == req.body['id']:
         raise JsonRpcError(403, "Session ID conflict detected", { "message" : "Session ID conflict detected"}) 
 
+    elapsed_time = session['elapsed_time']
     redis_db.json().set(f"examsession:{user['id']}:{exam_id}", "$.last_ping", time() )
+    redis_db.json().set(f"examsession:{user['id']}:{exam_id}", "$.elapsed_time", float(elapsed_time) + float(session['ping_interval'])  )
 
-    session_model = ExamSession(**session)
+
+    refreshed_session = redis_db.json().get(f"examsession:{user['id']}:{exam_id}", "$" )[0]
+
+
+    session_model = ExamSession(**refreshed_session)
 
     return Success({
         "ok": True,
@@ -130,7 +136,7 @@ async def create_exam_session(req):
 
     sessions = redis_db.json().get(f"examsession:{user['id']}:{exam['id']}", "$" )
 
-    if sessions  and len(sessions) > 0:
+    if sessions  and len(sessions) > 0 and req.body['intent'] == "resume":
         session = sessions[0]
 
         session_model = ExamSession(**session)
@@ -141,63 +147,71 @@ async def create_exam_session(req):
         "ok": True,
         "data": session_model.dict(exclude={'private_key', 'peer_public_key'})
     })
-
-
-    priv_key = pub_key = peer_public_key  = None
-
-
-    try:
         
-        peer_public_key = rsa.PublicKey.load_pkcs1(model.key.encode())
-
-        pub_key, priv_key = rsa.newkeys(512)
-
-    except Exception as e:
-        raise JsonRpcError(403, str(e), {"message" : str(e)})
+        else:
+            raise JsonRpcError(403, "Inactive Sesssion", { "message" : "Inactive Session"})
+        
 
 
-  
-    all_qids = redis_db.json().get("course_questions",f"$[?@.course == '{exam['course']['id']}'].id" )
-
-    number_of_questions_in_course = len(all_qids)
-
-    # print("Questions: ", number_of_questions_in_course)
-
-    if number_of_questions_in_course < exam['number_of_questions']:
-        raise JsonRpcError(403, "Not enough questions for selected course", {"message" : "Not enough questions for selected course"})
+    elif req.body['intent'] == "new":
 
 
-    qids = []
+
+        priv_key = pub_key = peer_public_key  = None
 
 
-    start = 0
-    while start < min( exam['number_of_questions'], number_of_questions_in_course):
-        x = random.randint(0, min( exam['number_of_questions'], number_of_questions_in_course) -1)
-        if all_qids[x] in qids:
-            continue
-        start += 1
-        qids.append(all_qids[x])
+        try:
+            
+            peer_public_key = rsa.PublicKey.load_pkcs1(model.key.encode())
+
+            pub_key, priv_key = rsa.newkeys(512)
+
+        except Exception as e:
+            raise JsonRpcError(403, str(e), {"message" : str(e)})
 
 
-    session = ExamSession(
-        peer_public_key = peer_public_key.save_pkcs1().decode(),
-        private_key = priv_key.save_pkcs1().decode(),
-        public_key = pub_key.save_pkcs1().decode(),
-        exam = model.exam,
-        user = user['id'],
-        ping_interval = settings.ping_interval,
-        question_ids = qids
-    )
+    
+        all_qids = redis_db.json().get("course_questions",f"$[?@.course == '{exam['course']['id']}'].id" )
 
-    session_dict = session.dict()
+        number_of_questions_in_course = len(all_qids)
 
-    redis_db.json().set(f"examsession:{user['id']}:{model.exam}", "$", session_dict )
+        # print("Questions: ", number_of_questions_in_course)
+
+        if number_of_questions_in_course < exam['number_of_questions']:
+            raise JsonRpcError(403, "Not enough questions for selected course", {"message" : "Not enough questions for selected course"})
 
 
-    return Success({
-        "ok": True,
-        "data": session.dict(exclude={'private_key', 'peer_public_key'})
-    })
+        qids = []
+
+
+        start = 0
+        while start < min( exam['number_of_questions'], number_of_questions_in_course):
+            x = random.randint(0, min( exam['number_of_questions'], number_of_questions_in_course) -1)
+            if all_qids[x] in qids:
+                continue
+            start += 1
+            qids.append(all_qids[x])
+
+
+        session = ExamSession(
+            peer_public_key = peer_public_key.save_pkcs1().decode(),
+            private_key = priv_key.save_pkcs1().decode(),
+            public_key = pub_key.save_pkcs1().decode(),
+            exam = model.exam,
+            user = user['id'],
+            ping_interval = settings.ping_interval,
+            question_ids = qids
+        )
+
+        session_dict = session.dict()
+
+        redis_db.json().set(f"examsession:{user['id']}:{model.exam}", "$", session_dict )
+
+
+        return Success({
+            "ok": True,
+            "data": session.dict(exclude={'private_key', 'peer_public_key'})
+        })
 
 
 

@@ -70,6 +70,7 @@ class ExamSession(BaseModel):
 	attempted_question_ids : list[str] =  Field( default = [], alias = "attemptedQuestionIds")
 	ping_interval : int = Field( default = 5 , alias = "pingInterval" )
 	last_ping : Union[None,float] = Field( default  = None, min = 0, alias = "lastPing" )
+	elapsed_time : float = Field( default  = 0, min = 0, alias = "elapsedTime" )
 	is_active : bool = Field( default = True, alias = "isActive" )
 	submitted : bool = Field( default = False )
 	
