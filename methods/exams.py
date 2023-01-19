@@ -86,6 +86,13 @@ async def session_heartbeat(req):
     user, payload = authenticate_user(req.auth)
 
     exam_id = req.body['exam']
+    matching = redis_db.json().get("exams", f"$[?@.id == '{exam_id}' ]")
+
+    if len(matching) == 0:
+        raise JsonRpcError(403, "exam with id does not exist")
+
+    exam = matching[0]
+
     sessions = redis_db.json().get(f"examsession:{user['id']}:{exam_id}", "$" )
 
     if sessions and len(sessions) == 0:
@@ -101,7 +108,6 @@ async def session_heartbeat(req):
     redis_db.json().set(f"examsession:{user['id']}:{exam_id}", "$.last_ping", time() )
     redis_db.json().set(f"examsession:{user['id']}:{exam_id}", "$.elapsed_time", float(elapsed_time) + float(session['ping_interval'])  )
 
-
     refreshed_session = redis_db.json().get(f"examsession:{user['id']}:{exam_id}", "$" )[0]
 
 
@@ -109,7 +115,10 @@ async def session_heartbeat(req):
 
     return Success({
         "ok": True,
-        "data": session_model.dict(exclude={'private_key', 'peer_public_key'})
+        "data": {
+        "session" :session_model.dict(exclude={'private_key', 'peer_public_key'}),
+        "auto_submit" : session_model.elapsed_time >= (exam['time_allowed'] * 60)
+        }
     })
 
 
