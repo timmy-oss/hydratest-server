@@ -130,7 +130,7 @@ async def create_exam_session(req):
 
     sessions = redis_db.json().get(f"examsession:{user['id']}:{exam['id']}", "$" )
 
-    if sessions and sessions and len(sessions) > 0:
+    if sessions  and len(sessions) > 0:
         session = sessions[0]
 
         session_model = ExamSession(**session)
@@ -365,6 +365,28 @@ async def submit_question_response(req):
         "session" : session_model.dict(exclude = { "private_key", "peer_public_key"})
         }
     })
+
+    else:
+
+        exam_session_response_model = ExamSessionResponse(
+            session = session['id'],
+            question = qid,
+            response = decoded_response['answer'],
+            response_content = decoded_response['answer'] if q['question_type'] == "germane" else q[f"option_{decoded_response['answer'].strip().upper()}"],
+            is_correct = is_correct_answer
+        )
+
+        exam_session_response = exam_session_response_model.dict()
+
+        redis_db.json().arrappend("examresponses","$", exam_session_response  )
+
+        return Success({
+            "ok": True,
+            "data": {
+            "exam_session_response" : exam_session_response ,
+            "session" : session_model.dict(exclude = { "private_key", "peer_public_key"})
+            }
+        })
 
 
     
