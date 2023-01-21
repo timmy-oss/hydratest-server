@@ -4,7 +4,7 @@ from lib.utils import model_validate, authenticate_user, validate_req
 from models.exams import CreateExamInputModel, CreateExamSessionInput, ResumeExamSessionInput, ExamSession, ExamSessionResponse
 from models.settings import Settings
 from time import time
-import rsa,random,json
+import rsa,random
 
 settings = Settings()
 
@@ -98,15 +98,16 @@ async def session_heartbeat(req):
     if sessions and len(sessions) == 0:
         raise InvalidParams("user has no active session")
 
-    # print(sessions)
     session = sessions[0]
-    # print(session['id'], req.body['id'])
+
     if not session['id'] == req.body['id']:
         raise JsonRpcError(403, "Session ID conflict detected", { "message" : "Session ID conflict detected"}) 
 
     elapsed_time = session['elapsed_time']
     redis_db.json().set(f"examsession:{user['id']}:{exam_id}", "$.last_ping", time() )
-    redis_db.json().set(f"examsession:{user['id']}:{exam_id}", "$.elapsed_time", float(elapsed_time) + float(session['ping_interval'])  )
+
+    if req.body['init'] == False and ( elapsed_time < exam['time_allowed'] * 60 ):
+        redis_db.json().set(f"examsession:{user['id']}:{exam_id}", "$.elapsed_time", float(elapsed_time) + float(session['ping_interval'])  )
 
     refreshed_session = redis_db.json().get(f"examsession:{user['id']}:{exam_id}", "$" )[0]
 
@@ -145,12 +146,20 @@ async def create_exam_session(req):
 
     sessions = redis_db.json().get(f"examsession:{user['id']}:{exam['id']}", "$" )
 
-    if sessions  and len(sessions) > 0 and req.body['intent'] == "resume":
+
+    allowed_intents = ["resume", "new"]
+
+    intent = req.body['intent']
+
+    if not intent in allowed_intents:
+        intent = "resume"
+
+    if sessions  and len(sessions) > 0 and intent == "resume":
         session = sessions[0]
 
         session_model = ExamSession(**session)
 
-        if session_model.is_active:
+        if session_model.is_active and not session_model.submitted:
         
             return Success({
         "ok": True,
@@ -162,7 +171,7 @@ async def create_exam_session(req):
         
 
 
-    elif req.body['intent'] == "new":
+    elif intent == "new":
 
 
 
@@ -221,6 +230,9 @@ async def create_exam_session(req):
             "ok": True,
             "data": session.dict(exclude={'private_key', 'peer_public_key'})
         })
+
+    else:
+        raise JsonRpcError(403, "Invalid intent.", {"messsage" : "Invalid intent."})
 
 
 
@@ -296,8 +308,42 @@ async def get_exam_session_question(req):
     })
 
 
+@method(name = "exams.session.submit")
+async def submit_exam(req):
+
+    req = validate_req(req)
+
+    user, payload = authenticate_user(req.auth)
+
+    exam_id = req.body['exam']
+    sessions = redis_db.json().get(f"examsession:{user['id']}:{exam_id}", "$" )
+
+    if sessions and len(sessions) == 0:
+        raise InvalidParams("user has no active session.")
+
+    session = sessions[0]
+    
+    if not session['id'] == req.body['sessionId']:
+        raise JsonRpcError(403, "Session ID conflict detected", { "message" : "Session ID conflict detected"}) 
+    
+
+    if not session['is_active'] or session['submitted']:
+        raise JsonRpcError(403, "Session is inactive.", {"message" : "Session is inactive."})
 
     
+    redis_db.json().set(f"examsession:{user['id']}:{exam_id}", "$.submitted", True  )
+    redis_db.json().set(f"examsession:{user['id']}:{exam_id}", "$.is_active", False  )
+
+    return Success({
+        "ok": True,
+        "data":{
+        "submitted" : True
+        }
+
+    })
+
+    
+
 
 
 @method(name="exams.session.submit_response")

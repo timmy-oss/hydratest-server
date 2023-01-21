@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     " Model for the application settings  "
     debug : bool = True
     app_name : str = "HydraTest"
-    ping_interval : int = 5
+    ping_interval : int = 2
     allowed_origins : list[str] = ["http://localhost:3000","https://hydratest.vercel.app"]
     db_url : AnyUrl = "redis://127.0.0.1:10005"
     db_username : str = "default"

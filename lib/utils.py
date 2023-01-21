@@ -17,7 +17,8 @@ settings = Settings()
 
 
 def gen_uid():
-    return uuid4().hex
+    return generate("1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", 8)
+    
 
 def generate_user_id():
     return generate("1234567890", 6)

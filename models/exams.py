@@ -22,7 +22,7 @@ class CreateExamInputModel(BaseModel):
 # Initialize Exam Session Model
 class CreateExamSessionInput( BaseModel ):
 	key : str =Field( alias= "key")
-	exam : str = Field( min_length = 16 )
+	exam : str = Field( min_length = 8 )
 	
 	class Config:
 		allow_population_by_field_name = True
@@ -42,8 +42,8 @@ class ResumeExamSessionInput( BaseModel ):
 # Exam Session Response 
 class ExamSessionResponse(BaseModel):
 	id : str = Field( default_factory= gen_uid)
-	session : str = Field( min_length = 16)
-	question : str = Field( min_length = 16 )
+	session : str = Field( min_length = 8)
+	question : str = Field( min_length = 8 )
 	created : float = Field( min =0, default_factory = time )
 	response : str = Field( min_length = 1)
 	response_content : str = Field( min_length = 1 , alias = "responseContent")
@@ -63,10 +63,10 @@ class ExamSession(BaseModel):
 	public_key : str =Field( alias= "publicKey")
 	private_key : str = Field( alias= "privateKey")
 	id : str = Field( default_factory= gen_uid)
-	exam : str = Field( min_length = 16 )
+	exam : str = Field( min_length = 8 )
 	user : str = Field(min_length = 6 )
 	created : float = Field( min =0, default_factory = time )
-	question_ids : list[str] = Field( min_items = 5, alias = "questionIds" )
+	question_ids : list[str] = Field( min_items = 5, alias = "questionIds", default = [] )
 	attempted_question_ids : list[str] =  Field( default = [], alias = "attemptedQuestionIds")
 	ping_interval : int = Field( default = 5 , alias = "pingInterval" )
 	last_ping : Union[None,float] = Field( default  = None, min = 0, alias = "lastPing" )
