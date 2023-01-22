@@ -8,6 +8,7 @@ class CreateUserModel(BaseModel):
     firstname : str =  Field( min_length= 3, max_length  = 35)
     lastname : str =  Field( min_length= 3, max_length  = 35)
     password : str = Field( min_length= 8,max_length= 35)
+    sessions : list[str] = Field( default= [])
 
 
     class Config:

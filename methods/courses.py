@@ -111,7 +111,7 @@ async def add_course_question(req):
 async def edit_course_question(req):
     req = validate_req(req)
 
-    user, payload = authenticate_user(req.auth)
+    authenticate_user(req.auth)
 
     id = req.body['questionId']
 
@@ -124,6 +124,8 @@ async def edit_course_question(req):
 
     course_question_dict = q;
     course_question_dict.update(req.body)
+
+    print(req.body)
 
     course_question_model = CourseQuestion(**course_question_dict)
     new_course_question = course_question_model.dict()

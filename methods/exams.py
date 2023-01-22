@@ -1,7 +1,7 @@
 ﻿from jsonrpcserver import method, JsonRpcError, InvalidParams, Success
 from lib.db import redis_db
 from lib.utils import model_validate, authenticate_user, validate_req
-from models.exams import CreateExamInputModel, CreateExamSessionInput, ResumeExamSessionInput, ExamSession, ExamSessionResponse
+from models.exams import CreateExamInputModel, CreateExamSessionInput,  ExamSession, ExamSessionResponse
 from models.settings import Settings
 from time import time
 import rsa,random
@@ -104,10 +104,15 @@ async def session_heartbeat(req):
         raise JsonRpcError(403, "Session ID conflict detected", { "message" : "Session ID conflict detected"}) 
 
     elapsed_time = session['elapsed_time']
-    redis_db.json().set(f"examsession:{user['id']}:{exam_id}", "$.last_ping", time() )
+    diff_in_time = None
 
     if req.body['init'] == False and ( elapsed_time < exam['time_allowed'] * 60 ):
-        redis_db.json().set(f"examsession:{user['id']}:{exam_id}", "$.elapsed_time", float(elapsed_time) + float(session['ping_interval'])  )
+        if session['last_ping']:
+            diff_in_time = time() -  session['last_ping']
+        else:
+            diff_in_time = float(session['ping_interval'])
+        redis_db.json().set(f"examsession:{user['id']}:{exam_id}", "$.elapsed_time", float(elapsed_time) + float(diff_in_time)  )
+        redis_db.json().set(f"examsession:{user['id']}:{exam_id}", "$.last_ping", time() )
 
     refreshed_session = redis_db.json().get(f"examsession:{user['id']}:{exam_id}", "$" )[0]
 
@@ -218,12 +223,17 @@ async def create_exam_session(req):
             exam = model.exam,
             user = user['id'],
             ping_interval = settings.ping_interval,
-            question_ids = qids
+            question_ids = qids,
+            name = f"{exam['exam_title']} - {model.exam} - {time()} "
         )
 
         session_dict = session.dict()
 
         redis_db.json().set(f"examsession:{user['id']}:{model.exam}", "$", session_dict )
+
+        session_key = f"examsession:{user['id']}:{model.exam}"
+        user_id = user['id']
+        redis_db.json().arrappend("users", f"$[?@.id == '{user_id}'].sessions", session_key )
 
 
         return Success({

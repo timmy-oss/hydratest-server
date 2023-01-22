@@ -2,6 +2,7 @@
 from lib.utils import gen_uid
 from typing import Union
 from time import time
+from enum import Enum
 
 class CreateExamInputModel(BaseModel):
     id : str = Field( default_factory= gen_uid)
@@ -59,6 +60,7 @@ class ExamSessionResponse(BaseModel):
 # Exam Session Model 
 
 class ExamSession(BaseModel):
+	name : Union[None,str] = Field( default=None)
 	peer_public_key : str =Field( alias= "peerPublicKey")
 	public_key : str =Field( alias= "publicKey")
 	private_key : str = Field( alias= "privateKey")
@@ -73,11 +75,58 @@ class ExamSession(BaseModel):
 	elapsed_time : float = Field( default  = 0, min = 0, alias = "elapsedTime" )
 	is_active : bool = Field( default = True, alias = "isActive" )
 	submitted : bool = Field( default = False )
-	
+	result_generated : bool = Field(default= False, alias= "resultGenerated")
 	
 	
 	class Config:
 		allow_population_by_field_name = True
+
+
+class GenerateResultInput(BaseModel):
+	session_key : str = Field( alias='sessionKey', min_length= 8,  )
+	is_regenerated : bool = Field(default= False, alias="isRegenerated")
+
+	class Config:
+		allow_population_by_field_name = True
+
+
+class Remark(  str, Enum):
+	_failed = "failed"
+	_pass = "pass"
+	_credit = "pass"
+	_dinstinction = "distinction"
+	_unknown = "unknown"
+
+class Result(BaseModel):
+	id : str = Field( default_factory= gen_uid)
+	user : str = Field( min_length = 6 )
+	exam : str = Field( min_length = 8 )
+	course : str = Field( min_length = 8 )
+	course_name : str = Field( min_length = 4 )
+	exam_name : str = Field( min_length = 4 )
+	correct_attempts   : int = Field( default= 0, alias="correctAttempts")
+	incorrect_attempts : int = Field( default=0 ,alias= "incorrectAttempts")
+	total_attempts : int = Field(default=0, alias="totalAttempts")
+	attempts : int = Field(default=0, alias= "attempts")	
+	score : float = Field(default= 0)
+	remark : Remark
+	session_key : str = Field( alias= "sessionKey" )
+	created : float = Field( min =0, default_factory = time )
+
+
+
+	class Config:
+		allow_population_by_field_name = True
+	
+
+
+
+
+
+
+
+
+
 		
 
 
