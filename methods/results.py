@@ -9,7 +9,7 @@ settings = Settings()
 
 def filter_func(d):
 
-    return  d.get('result_generated', False)
+    return not d.get('result_generated', False)
 
 
 def map_func(k):
