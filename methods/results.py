@@ -129,6 +129,7 @@ async def generate_result_from_session(req):
         course_name = exam['course']['course_title'],
         course = exam['course']['id'],
         user = user['id'],
+        allow_pdf = model.generate_pdf
     )
 
     # print(result.dict())

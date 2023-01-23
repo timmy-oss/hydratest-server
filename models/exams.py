@@ -85,6 +85,7 @@ class ExamSession(BaseModel):
 class GenerateResultInput(BaseModel):
 	session_key : str = Field( alias='sessionKey', min_length= 8,  )
 	is_regenerated : bool = Field(default= False, alias="isRegenerated")
+	generate_pdf : bool = Field(default= False, alias="generatePdf")
 
 	class Config:
 		allow_population_by_field_name = True
@@ -112,6 +113,7 @@ class Result(BaseModel):
 	remark : Remark
 	session_key : str = Field( alias= "sessionKey" )
 	created : float = Field( min =0, default_factory = time )
+	allow_pdf : bool = Field(default = False, alias = "allowPdf")
 
 
 
