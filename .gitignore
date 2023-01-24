@@ -11,3 +11,7 @@ __pycache__
 .idea
 .idea/
 .idea/*
+
+/__data__
+*__data__*
+

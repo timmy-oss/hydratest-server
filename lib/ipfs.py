@@ -11,7 +11,7 @@ def upload_to_ipfs(file):
         project_secret = settings.infura_project_secret
 
 
-        print(project_id, project_secret)
+        # print(project_id, project_secret)
 
         response = requests.post(
             '{0}/api/v0/add'.format(settings.ipfs_node_url), files={'fileOne': file}, auth=(project_id, project_secret))

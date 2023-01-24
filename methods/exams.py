@@ -224,7 +224,7 @@ async def create_exam_session(req):
             user = user['id'],
             ping_interval = settings.ping_interval,
             question_ids = qids,
-            name = f"{exam['exam_title']} - {model.exam} - {time()} "
+            name = f"{exam['exam_title']} - {exam['course']['course_title']} - {time()} "
         )
 
         session_dict = session.dict()

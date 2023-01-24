@@ -152,7 +152,10 @@ async def get_course_questions(  req  ):
     
     id = req.body['courseId']
 
-    matching = redis_db.json().get("course_questions", f"$[?@.course == '{id}' ]")
+    matching = redis_db.json().get("course_questions", f"$[?@.course == '{id}' ]")[:20]
+
+
+    # print(matching)
 
 
     return Success({

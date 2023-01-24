@@ -95,7 +95,7 @@ async def generate_result_from_session(req):
     incorrect_attempts = len(incorrect_responses)
     attempts = len(responses)
     total_attempts = len(session['question_ids'])
-    score = (correct_attempts / total_attempts) * 100
+    score = round((correct_attempts / total_attempts) * 100, 2)
 
     if score >= 0 and score <= 50:
         remark = Remark._failed
