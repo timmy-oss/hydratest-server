@@ -125,7 +125,7 @@ async def edit_course_question(req):
     course_question_dict = q;
     course_question_dict.update(req.body)
 
-    print(req.body)
+    # print(req.body)
 
     course_question_model = CourseQuestion(**course_question_dict)
     new_course_question = course_question_model.dict()
@@ -227,7 +227,7 @@ async def upvote_question(  req  ):
 
     q = matching[0]
     q_upvotes = q.get('upvotes',[])
-    print(q_upvotes,q)
+    # print(q_upvotes,q)
 
     if not user['id'] in q_upvotes:
         redis_db.json().arrappend("course_questions", f"$[?@.id == '{id}'].upvotes", user['id'] )
