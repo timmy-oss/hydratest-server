@@ -114,6 +114,7 @@ class Result(BaseModel):
 	session_key : str = Field( alias= "sessionKey" )
 	created : float = Field( min =0, default_factory = time )
 	allow_pdf : bool = Field(default = False, alias = "allowPdf")
+	map_info : list[str] = Field(default= [],alias= "mapInfo" )
 
 
 

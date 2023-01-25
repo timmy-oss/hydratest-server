@@ -90,6 +90,10 @@ async def generate_result_from_session(req):
 
     incorrect_responses = list(filter( lambda x: not x['is_correct'], responses ))
 
+    correct_responses_question_ids = list(map(lambda x: x['question'], correct_responses))
+
+    incorrect_responses_question_ids = list(map(lambda x: x['question'], incorrect_responses))
+
     remark = None
     correct_attempts = len(correct_responses)
     incorrect_attempts = len(incorrect_responses)
@@ -116,6 +120,21 @@ async def generate_result_from_session(req):
     
     exam = matching[0]
 
+
+    result_map = []
+
+    for qid in session['question_ids']:
+        if qid in correct_responses_question_ids:
+            result_map.append("T")
+        elif qid in incorrect_responses_question_ids:
+            result_map.append("F")
+        else:
+            result_map.append("N")
+
+
+    # print(result_map)
+
+
     result  =  Result(
         correct_attempts = correct_attempts,
         incorrect_attempts = incorrect_attempts,
@@ -129,7 +148,8 @@ async def generate_result_from_session(req):
         course_name = exam['course']['course_title'],
         course = exam['course']['id'],
         user = user['id'],
-        allow_pdf = model.generate_pdf
+        allow_pdf = model.generate_pdf,
+        map_info = result_map
     )
 
     # print(result.dict())
