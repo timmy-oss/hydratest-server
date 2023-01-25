@@ -104,7 +104,7 @@ async def generate_result_from_session(req):
     if score >= 0 and score <= 50:
         remark = Remark._failed
     elif score > 50 and score <= 60:
-        remark = Remark._passed
+        remark = Remark._pass
     elif score > 60 and score <= 70:
         remark = Remark._credit
     elif score > 70 and score <= 100:
