@@ -1,4 +1,4 @@
-from .import users, courses, exams, results
+from .import users, courses, exams, results, sessions
 from lib.db import redis_db
 
 redis_db.json().set("users", "$",  [],  nx =True)
