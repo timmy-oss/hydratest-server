@@ -58,7 +58,6 @@ class ExamSessionResponse(BaseModel):
 
 
 # Exam Session Model 
-
 class ExamSession(BaseModel):
 	name : Union[None,str] = Field( default=None)
 	peer_public_key : str =Field( alias= "peerPublicKey")

@@ -87,6 +87,26 @@ async def get_session(req):
         "data" : session
     })
 
+
+
+@method(name = "sessions.delete_one")
+async def delete_session(req):
+
+    req = validate_req(req)
+
+    user, payload =  authenticate_user(req.auth)
+
+    sessions_keys = user['sessions']
+
+    index = sessions_keys.index( req.body['sessionId'] )
+
+
+    redis_db.json().arrpop( "users", "$.sessions", index )
+
+    return Success({
+        "ok" : True,
+    })
+
    
 
 
