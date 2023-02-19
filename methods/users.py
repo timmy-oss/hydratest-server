@@ -152,21 +152,21 @@ async def get_authenticated_user(  req  ):
 @method( name = "home")
 async def home(  req  ):
 
-    users_matching = redis_db.json().get("users", "$")[0]
-    courses_matching = redis_db.json().get("courses", "$")[0]
-    exams_matching = redis_db.json().get("exams", "$")[0]
-    results_matching = redis_db.json().get("results", "$")[0]
-    questions_matching = redis_db.json().get("course_questions", "$")[0]
+    users_matching = redis_db.json().arrlen("users", "$")
+    courses_matching = redis_db.json().arrlen("courses", "$")
+    exams_matching = redis_db.json().arrlen("exams", "$")
+    results_matching = redis_db.json().arrlen("results", "$")
+    questions_matching = redis_db.json().arrlen("course_questions", "$")
 
     
     return Success({
         "ok" : True,
         "data" : {
-            "user" :  len(users_matching),
-            "course" :  len(courses_matching),
-            "exam" :  len(exams_matching),
-            "result" :  len(results_matching),
-            "question" :  len(questions_matching),
+            "user" :  (users_matching),
+            "course" :  (courses_matching),
+            "exam" :  (exams_matching),
+            "result" :  (results_matching),
+            "question" :  (questions_matching),
 
         }
     })
