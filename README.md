@@ -8,4 +8,4 @@
 
 **HydraTest is a digital test solution inspired by FUTA TruTest.**
 
-> Still in Development 💥
+> Refer to [README]( https://github.com/timmy-oss/hydratest#readme )
