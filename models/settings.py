@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     debug : bool = True
     app_name : str = "HydraTest"
     ping_interval : int = 2
-    allowed_origins : list[str] = ["http://localhost:3001","http://localhost:3000","https://hydratest.vercel.app"]
+    allowed_origins : list[str] = ["http://localhost:3001", "https://pp1.timmypelumy.dev", "http://localhost:3000","https://hydratest.vercel.app"]
     db_url : AnyUrl = "redis://127.0.0.1:10005"
     db_username : str = "default"
     db_password  : str = "root"
@@ -32,4 +32,4 @@ class Settings(BaseSettings):
 
 
     class Config:
-        env_file = ".secrets"
+        env_file = ".env"
