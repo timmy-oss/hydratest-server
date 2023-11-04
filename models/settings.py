@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     infura_project_id  :str = ""
     infura_project_secret : str = ""
     ipfs_read_node : str = ""
+    cloudinary_cloud_name: str = "cloud_name"
+    cloudinary_api_key: str = "api_key"
+    cloudinary_api_secret: str = "api_secret"
 
 
 
