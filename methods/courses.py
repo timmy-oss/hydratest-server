@@ -20,6 +20,7 @@ async def add_new_course(  req  ):
     err,model = model_validate(CreateCourseInputModel, req.body)
 
     if err:
+        print(err)
         return InvalidParams(err)
 
     data = model.dict()
